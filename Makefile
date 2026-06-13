@@ -9,6 +9,9 @@ install:
 helix:
 	uv run hx .
 
+debug:
+	uv run python -m src
+
 clean:
 	uv cache clean
 	rm -rf __pycache__ .mypy_cache .venv uv.lock
@@ -28,4 +31,4 @@ lint-strict:
 	- uv run flake8 . --extend-exclude '.venv,llm_sdk/'
 	- uv run mypy . --strict --exclude 'llm_sdk/'
 
-.PHONY: install helix clean lint lint-strict
+.PHONY: install helix debug clean lint lint-strict
