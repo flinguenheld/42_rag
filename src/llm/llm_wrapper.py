@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import torch
-from typing import ClassVar, TypedDict, cast
+from typing import ClassVar, TypedDict, cast, Any
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
@@ -9,25 +9,48 @@ from transformers import (
 )
 
 
+# ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█░░░█░░░█▄█░░░█░█░█▀▄░█▀█░█▀█░█▀█░█▀▀░█▀▄░░
+# ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█░░░█░░░█░█░░░█▄█░█▀▄░█▀█░█▀▀░█▀▀░█▀▀░█▀▄░░
+# ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▀▀▀░▀▀▀░▀░▀░░░▀░▀░▀░▀░▀░▀░▀░░░▀░░░▀▀▀░▀░▀░░
 class LLMWrapper:
     NAME: ClassVar[str] = "Qwen/Qwen3-0.6B"
 
     class PromptDict(TypedDict):
+        """Generate returns a dict with these to fields"""
+
         input_ids: torch.Tensor
         attention_mask: torch.Tensor
 
+    # ########################################################################
+    # ############################################################## INIT ####
     def __init__(self) -> None:
         self.tokenizer = AutoTokenizer.from_pretrained(self.NAME)
         self.model: PreTrainedModel = cast(
             PreTrainedModel,
             AutoModelForCausalLM.from_pretrained(
                 self.NAME,
-                torch_dtype=torch.bfloat16,
+                dtype=torch.bfloat16,
                 device_map="auto",
             ),
         )
 
-    def _encode(self, prompt: str) -> PromptDict | None:
+    # ########################################################################
+    # ########################################################### GET IDS ####
+    # TODO: KEEP THAT ? -> BORING BECAUSE IT DOES NOT REALLY RETURN A LIST[INT]
+    def get_ids(self, txt: str) -> list[int] | Any:
+        """Get all ids in txt"""
+        if self.model and self.tokenizer:
+            ids = self.tokenizer(txt).to(self.model.device)
+            return ids["input_ids"]
+        return []
+
+    def get_id(self, txt: str) -> int:
+        """Get the first id of txt"""
+        return self.get_ids(txt)[0]
+
+    # ########################################################################
+    # ##################################################### ENCODE PROMPT ####
+    def _encode_prompt(self, prompt: str) -> PromptDict | None | Any:
         """Encode prompt into tokens"""
 
         if self.model and self.tokenizer:
@@ -41,14 +64,30 @@ class LLMWrapper:
             prompt_dict = self.tokenizer([tokens], return_tensors="pt").to(
                 self.model.device
             )
-            if isinstance(prompt_dict, dict):
-                return prompt_dict  # type: ignore[return-value]
+            return prompt_dict
         return None
 
+    # ########################################################################
+    # ############################################################ LSTRIP ####
+    def lstrip(self, txt: str) -> str:
+        forbidden = ["<think>", "</think>", "\n", " "]
+
+        again = True
+        while again:
+            again = False
+            for f in forbidden:
+                if txt.startswith(f):
+                    txt = txt.lstrip(f)
+                    again = True
+
+        return txt
+
+    # ########################################################################
+    # ############################################################### ASK ####
     def ask(self, prompt: str, max_new_tokens: int) -> str:
         """Generate an answer from the given prompt"""
 
-        tokens = self._encode(prompt)
+        tokens = self._encode_prompt(prompt)
         if tokens and self.tokenizer:
             generated_tk_ids = self.model.generate(  # type: ignore[operator]
                 inputs=tokens["input_ids"],
@@ -59,10 +98,11 @@ class LLMWrapper:
             # Get rid of prompt and return the answer
             input_length = tokens["input_ids"].shape[1]
             answer_ids = generated_tk_ids[0][input_length:]
+
             answer = self.tokenizer.decode(
                 answer_ids, skip_special_tokens=True
             )
             if isinstance(answer, str):
-                return answer
+                return self.lstrip(answer)
 
         return ""

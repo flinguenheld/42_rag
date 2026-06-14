@@ -6,7 +6,8 @@ def main() -> None:
 
     llm = LLMWrapper()
 
-    print(llm.ask("Hello", 50))
+    answer = llm.ask("Hello", 50)
+    print(f"Hello: '{answer}'")
 
 
 if __name__ == "__main__":
