@@ -18,3 +18,15 @@ dependencies = [
     "transformers>=5.11.0",
     "uuid>=1.30",
 ]
+
+# ############################################
+# ############ Only download tools for the CPU
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu" },
+]

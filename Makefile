@@ -1,34 +1,43 @@
 NAME="rag.py"
 
-UV_CACHE_DIR = .cache_rag
-export UV_CACHE_DIR
+# uv run hf env
+CACHE_FOLDER=~/goinfre/rag_cache/
+CACHE_LLM=$(CACHE_FOLDER)hugging_face
+CACHE_UV=$(CACHE_FOLDER)uv
+
+export HF_HUB_CACHE=$(CACHE_LLM)
+UV=uv --cache-dir $(CACHE_UV)
 
 install:
-	uv sync
+	$(UV) sync
+
+run:
+	$(UV) run python -m src
 
 helix:
-	uv run hx .
+	$(UV) run hx .
 
 debug:
-	uv run python -m src
+	$(UV) run python -m src
 
 clean:
-	uv cache clean
+	$(UV) cache clean
+	rm -rf $(CACHE_FOLDER)
 	rm -rf __pycache__ .mypy_cache .venv uv.lock
 
 lint:
-	uv run flake8 . --extend-exclude \
-			'.venv/,vllm/,.cache_rag'
-	uv run mypy . --warn-return-any \
+	- uv run flake8 . --extend-exclude \
+			'.venv/,vllm/,$(CACHE_FOLDER)'
+	- uv run mypy . --warn-return-any \
 			--warn-unused-ignores \
 			--ignore-missing-imports \
 			--disallow-untyped-defs \
 			--check-untyped-defs \
 			--exclude 'vllm/' \
-			--exclude '.cache_rag/'
+			--exclude $(CACHE_FOLDER)
 
 lint-strict:
 	- uv run flake8 . --extend-exclude '.venv,llm_sdk/'
 	- uv run mypy . --strict --exclude 'llm_sdk/'
 
-.PHONY: install helix debug clean lint lint-strict
+.PHONY: install run helix debug clean lint lint-strict
