@@ -1,3 +1,4 @@
+from src.chunking.markdown import chunk_markdown, MarkdownChunkIndex
 from pathlib import Path
 
 from tqdm import tqdm
@@ -43,10 +44,16 @@ class FileManager:
                     t.update()
             index = ChunkIndex(records)
 
+            records_md: list[tuple[str, str]] = []  # (file_path, chunk)
             print("# ############## Chunking markdown files ##")
             with tqdm(total=len(markdown_files)) as t:
                 for file in markdown_files:
+                    source = file.read_text(encoding="utf-8")
+                    for chunk in chunk_markdown(source):
+                        records_md.append((str(path), chunk))
                     t.update()
+
+            index_md = MarkdownChunkIndex(records_md)
 
 
 # Open folder
