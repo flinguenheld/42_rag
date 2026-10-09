@@ -1,5 +1,5 @@
-from src.llm.llm_wrapper import LLMWrapper
 from src.chunking.chunking import FileManager
+from src.indexing.indexing import Retriever
 
 
 def main() -> None:
@@ -10,8 +10,12 @@ def main() -> None:
     # answer = llm.ask("Hello", 50)
     # print(f"Hello: '{answer}'")
 
-    file_manager = FileManager()
-    file_manager.run()
+    records = FileManager().run()
+    retriever = Retriever(records)
+
+    question = input("Question: ")
+    for file, chunk in retriever.search(question):
+        print(f"\n--- {file} ---\n{chunk[:300]}")
 
 
 if __name__ == "__main__":

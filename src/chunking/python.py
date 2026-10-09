@@ -25,7 +25,7 @@ def tokenize_python(text: str) -> list[str]:
 def chunk_code(
     source: str,
     language: str = "python",
-    chunk_size: int = 2048,
+    chunk_size: int = 2000,
 ) -> list[str]:
     """Structure-aware chunking: never splits mid-function/mid-class."""
     chunker = CodeChunker(

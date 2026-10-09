@@ -6,6 +6,7 @@ CACHE_LLM=$(CACHE_FOLDER)hugging_face
 CACHE_UV=$(CACHE_FOLDER)uv
 
 export HF_HUB_CACHE=$(CACHE_LLM)
+export HF_HOME=$(CACHE_LLM)
 UV=uv --cache-dir $(CACHE_UV)
 
 install:
