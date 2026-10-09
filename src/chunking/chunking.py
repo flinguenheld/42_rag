@@ -1,9 +1,11 @@
-from src.chunking.markdown import chunk_markdown, MarkdownChunkIndex
+from collections.abc import Callable
 from pathlib import Path
 
+from rank_bm25 import BM25Okapi
 from tqdm import tqdm
 
-from src.chunking.python import ChunkIndex, chunk_code
+from src.chunking.markdown import chunk_markdown, tokenize_markdown
+from src.chunking.python import chunk_code, tokenize_python
 
 
 class FileManagerException(Exception):
@@ -42,7 +44,7 @@ class FileManager:
                         records.append((str(path), chunk))
 
                     t.update()
-            index = ChunkIndex(records)
+            index = ChunkIndex(records, tokenize=tokenize_python)
 
             records_md: list[tuple[str, str]] = []  # (file_path, chunk)
             print("# ############## Chunking markdown files ##")
@@ -53,13 +55,30 @@ class FileManager:
                         records_md.append((str(path), chunk))
                     t.update()
 
-            index_md = MarkdownChunkIndex(records_md)
+            index_md = ChunkIndex(records_md, tokenize=tokenize_markdown)
 
 
-# Open folder
+# ############################################################################
+# BM25 index
+class ChunkIndex:
+    def __init__(self, records: list[tuple[str, str]], tokenize: Callable):
+        self.records = records
+        self.tokenize = tokenize
+        self.bm25 = (
+            BM25Okapi([tokenize(c) for _, c in records]) if records else None
+        )
 
-# Read all files
-
-# Chunk with the lib
-
-# Display a bar
+    def search(
+        self,
+        query: str,
+        top_k: int = 3,
+    ) -> list[tuple[str, str, float]]:
+        if not self.bm25:
+            return []
+        scores = self.bm25.get_scores(self.tokenize(query))
+        ranked = sorted(zip(self.records, scores), key=lambda x: -x[1])
+        return [
+            (path, chunk, score)
+            for (path, chunk), score in ranked[:top_k]
+            if score > 0
+        ]
