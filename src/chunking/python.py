@@ -26,11 +26,13 @@ def chunk_code(
     source: str,
     language: str = "python",
     chunk_size: int = 2000,
-) -> list[str]:
+) -> list[tuple[str, int, int]]:
     """Structure-aware chunking: never splits mid-function/mid-class."""
     chunker = CodeChunker(
         language=language,
         tokenizer="character",  # only used to measure chunk size
         chunk_size=chunk_size,  # max tokens per chunk
     )
-    return [chunk.text for chunk in chunker.chunk(source)]
+    return [
+        (c.text, c.start_index, c.end_index) for c in chunker.chunk(source)
+    ]

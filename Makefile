@@ -2,27 +2,28 @@ NAME="rag.py"
 
 # uv run hf env
 CACHE_FOLDER=~/goinfre/rag_cache/
+CACHE_VENV=$(CACHE_FOLDER).venv
 CACHE_LLM=$(CACHE_FOLDER)hugging_face
 CACHE_UV=$(CACHE_FOLDER)uv
 
+export UV_PROJECT_ENVIRONMENT=$(CACHE_VENV)
 export HF_HUB_CACHE=$(CACHE_LLM)
 export HF_HOME=$(CACHE_LLM)
-UV=uv --cache-dir $(CACHE_UV)
 
 install:
-	$(UV) sync
+	uv sync
 
 run:
-	$(UV) run python -m src
+	uv run python -m src
 
 helix:
-	$(UV) run hx .
+	uv run hx .
 
 debug:
-	$(UV) run python -m src
+	uv run python -m src
 
 clean:
-	$(UV) cache clean
+	uv cache clean
 	rm -rf $(CACHE_FOLDER)
 	rm -rf __pycache__ .mypy_cache .venv uv.lock
 

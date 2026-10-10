@@ -7,10 +7,10 @@ from src.chunking.python import tokenize_python
 
 
 class Retriever:
-    def __init__(self, records: list[tuple[str, str]]):
+    def __init__(self, records: list[tuple[str, tuple[str, int, int]]]):
         self.records = records  # (file_path, chunk)
         corpus_tokens = [
-            self._tokenize(file, chunk) for file, chunk in records
+            self._tokenize(file, chunk[0]) for file, chunk in records
         ]
         self.bm25 = bm25s.BM25()
         self.bm25.index(corpus_tokens)

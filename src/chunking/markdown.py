@@ -16,7 +16,9 @@ def tokenize_markdown(text: str) -> list[str]:
 
 # ############################################################################
 # Chunking: structure-aware, keeps titles & paragraphs
-def chunk_markdown(source: str, chunk_size: int = 2000) -> list[str]:
+def chunk_markdown(
+    source: str, chunk_size: int = 2000
+) -> list[tuple[str, int, int]]:
     """
     One chunk per section/paragraph block, with heading context prepended.
     """
@@ -24,4 +26,6 @@ def chunk_markdown(source: str, chunk_size: int = 2000) -> list[str]:
         "markdown", lang="en", chunk_size=chunk_size
     )
 
-    return [chunk.text for chunk in md_chunker.chunk(source)]
+    return [
+        (c.text, c.start_index, c.end_index) for c in md_chunker.chunk(source)
+    ]

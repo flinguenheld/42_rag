@@ -13,7 +13,7 @@ class FileManagerException(Exception):
 class FileManager:
     FOLDER = "./vllm-0.10.1"
 
-    def run(self) -> list[tuple[str, str]]:
+    def run(self) -> list[tuple[str, tuple[str, int, int]]]:
         """Returns a list of (file_path, chunk)."""
         path = Path(self.FOLDER)
         if not path.exists():
@@ -24,7 +24,7 @@ class FileManager:
         # one dict: extension -> chunking function
         chunkers = {"*.py": chunk_code, "*.md": chunk_markdown}
 
-        records: list[tuple[str, str]] = []
+        records: list[tuple[str, tuple[str, int, int]]] = []
         for pattern, chunker in chunkers.items():
             files = list(path.rglob(pattern))
             for file in tqdm(files, desc=f"Chunking {pattern}"):
