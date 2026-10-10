@@ -13,6 +13,9 @@ class FileManagerException(Exception):
 class FileManager:
     FOLDER = "./vllm-0.10.1"
 
+    def __init__(self, max_chunk_size: int):
+        self.max_chunk_size = max_chunk_size
+
     def run(self) -> list[tuple[str, tuple[str, int, int]]]:
         """Returns a list of (file_path, chunk)."""
         path = Path(self.FOLDER)
@@ -29,7 +32,7 @@ class FileManager:
             files = list(path.rglob(pattern))
             for file in tqdm(files, desc=f"Chunking {pattern}"):
                 source = file.read_text(encoding="utf-8", errors="ignore")
-                for chunk in chunker(source):
+                for chunk in chunker(source, chunk_size=self.max_chunk_size):
                     records.append((str(file), chunk))
 
         if not records:
