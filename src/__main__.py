@@ -1,40 +1,37 @@
-import os
-
 import fire
 
+from data import set_exports
 from src.chunking.chunking import FileManager
-from src.indexing.indexing import Retriever
+from src.indexing.indexer import Indexer
+from src.indexing.searcher import Searcher
 
 
+# ############################################################################
+# ################################################################### MAIN ###
 def main() -> None:
-
     print("Hello from rag!")
     set_exports()
 
-    # index()
-    # llm = LLMWrapper()
 
-    # answer = llm.ask("Hello", 50)
-    # print(f"Hello: '{answer}'")
-
-
-class Index:
-    def index(self, max_chunk_size: int = 2000) -> None:
-        records = FileManager(max_chunk_size).run()
-        retriever = Retriever(records)
-
-        question = input("Question: ")
-        for file, (chunk, start, end) in retriever.search(question):
-            print(f"\n--- {file} --- {start}:{end}")
+# ############################################################################
+# ################################################################## INDEX ###
+def index(max_chunk_size: int = 2000) -> None:
+    records = FileManager(max_chunk_size).run()
+    indexer = Indexer(records)
+    indexer.save()
 
 
-def set_exports():
-    os.environ["UV_PROJECT_ENVIRONMENT"] = "~/goinfre/rag_cache/.venv/"
-    os.environ["HF_HUB_CACHE"] = "~/goinfre/rag_cache/hugging_face/"
-    os.environ["HF_HOME"] = "~/goinfre/rag_cache/hugging_face/"
-    os.environ["UV_CACHE_DIR"] = "~/goinfre/rag_cache/uv/"
+# ############################################################################
+# ################################################################# SEARCH ###
+def search(question: str, k: int = 5) -> None:
+    searcher = Searcher()
+    answer = searcher.search(question, k)
+
+    print("Answer:")
+    for i, a in enumerate(answer):
+        print(f"{i + 1} -> file: {a[0]} -> {a[1][1]}/{a[1][2]}")
 
 
 if __name__ == "__main__":
     main()
-    fire.Fire(Index)
+    fire.Fire({"index": index, "search": search})
