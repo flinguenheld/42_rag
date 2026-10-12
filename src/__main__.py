@@ -1,7 +1,7 @@
 import fire
 
 from data import set_exports
-from src.chunking.chunking import FileManager
+from src.chunking.file_manager import FileManager
 from src.indexing.indexer import Indexer
 from src.indexing.searcher import Searcher
 
@@ -28,8 +28,8 @@ def search(question: str, k: int = 5) -> None:
     answer = searcher.search(question, k)
 
     print("Answer:")
-    for i, a in enumerate(answer):
-        print(f"{i + 1} -> file: {a[0]} -> {a[1][1]}/{a[1][2]}")
+    for i, record in enumerate(answer):
+        print(f"{i + 1} -> file: {record}")
 
 
 if __name__ == "__main__":

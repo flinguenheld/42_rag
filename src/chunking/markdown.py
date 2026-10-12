@@ -2,6 +2,8 @@ import re
 
 from chonkie import RecursiveChunker
 
+from src.models import MinimalSource
+
 
 # ############################################################################
 # Markdown-aware tokenization for BM25
@@ -17,15 +19,24 @@ def tokenize_markdown(text: str) -> list[str]:
 # ############################################################################
 # Chunking: structure-aware, keeps titles & paragraphs
 def chunk_markdown(
-    source: str, chunk_size: int = 2000
-) -> list[tuple[str, int, int]]:
+    source: str,
+    file_path: str,
+    chunk_size: int = 2000,
+) -> list[MinimalSource]:
     """
     One chunk per section/paragraph block, with heading context prepended.
     """
     md_chunker = RecursiveChunker.from_recipe(
-        "markdown", lang="en", chunk_size=chunk_size
+        "markdown",
+        lang="en",
+        chunk_size=chunk_size,
     )
 
     return [
-        (c.text, c.start_index, c.end_index) for c in md_chunker.chunk(source)
+        MinimalSource(
+            file_path=file_path,
+            first_character_index=c.start_index,
+            last_character_index=c.end_index,
+        )
+        for c in md_chunker.chunk(source)
     ]

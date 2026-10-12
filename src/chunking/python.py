@@ -2,6 +2,8 @@ import re
 
 from chonkie import CodeChunker
 
+from src.models import MinimalSource
+
 
 # ############################################################################
 # Code-aware tokenization for BM25
@@ -24,9 +26,10 @@ def tokenize_python(text: str) -> list[str]:
 # Chunking: chonkie CodeChunker (tree-sitter AST boundaries)
 def chunk_code(
     source: str,
+    file_path: str,
     language: str = "python",
     chunk_size: int = 2000,
-) -> list[tuple[str, int, int]]:
+) -> list[MinimalSource]:
     """Structure-aware chunking: never splits mid-function/mid-class."""
     chunker = CodeChunker(
         language=language,
@@ -34,5 +37,10 @@ def chunk_code(
         chunk_size=chunk_size,  # max tokens per chunk
     )
     return [
-        (c.text, c.start_index, c.end_index) for c in chunker.chunk(source)
+        MinimalSource(
+            file_path=file_path,
+            first_character_index=c.start_index,
+            last_character_index=c.end_index,
+        )
+        for c in chunker.chunk(source)
     ]
