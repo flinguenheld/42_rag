@@ -1,14 +1,11 @@
 NAME="rag.py"
 
-# uv run hf env
-CACHE_FOLDER=~/goinfre/rag_cache/
-CACHE_VENV=$(CACHE_FOLDER).venv
-CACHE_LLM=$(CACHE_FOLDER)hugging_face
-CACHE_UV=$(CACHE_FOLDER)uv
+CACHE_FOLDER=$(HOME)/goinfre/rag_cache/
+export UV_PROJECT_ENVIRONMENT=$(CACHE_FOLDER).venv/"
+export HF_HUB_CACHE=$(CACHE_FOLDER)hugging_face/"
+export HF_HOME=$(CACHE_FOLDER)hugging_face/"
+export UV_CACHE_DIR=$(CACHE_FOLDER)uv/"
 
-export UV_PROJECT_ENVIRONMENT=$(CACHE_VENV)
-export HF_HUB_CACHE=$(CACHE_LLM)
-export HF_HOME=$(CACHE_LLM)
 
 install:
 	uv sync
