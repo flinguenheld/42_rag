@@ -1,9 +1,12 @@
 import fire
 
 from data import set_exports
+from src.answering.answering import build_prompt
 from src.chunking.file_manager import FileManager
 from src.indexing.indexer import Indexer
 from src.indexing.searcher import Searcher
+from src.llm.llm_wrapper import LLMWrapper
+from src.models import MinimalAnswer, MinimalSource
 
 
 # ############################################################################
@@ -23,15 +26,46 @@ def index(max_chunk_size: int = 2000) -> None:
 
 # ############################################################################
 # ################################################################# SEARCH ###
-def search(question: str, k: int = 5) -> None:
+def search(question: str, k: int = 5) -> list[MinimalSource]:
     searcher = Searcher()
-    answer = searcher.search(question, k)
+    records = searcher.search(question, k)
 
-    print("Answer:")
-    for i, record in enumerate(answer):
+    print("Records:\n")
+    for i, record in enumerate(records):
         print(f"{i + 1} -> file: {record}")
+
+    return records
+
+
+# ############################################################################
+# ################################################################# ANSWER ###
+# def answer(question: str, k: int = 5) -> MinimalAnswer:
+def answer(question: str, k: int = 5) -> None:
+    searcher = Searcher()
+    records = searcher.search(question, k)
+
+    llm = LLMWrapper()
+
+    prompt = build_prompt(question, records)
+    raw = llm.ask(prompt, max_new_tokens=2000)
+
+    print("test generated:\n")
+    print(raw)
+
+    # return MinimalAnswer(
+    #     question_id=...,
+    #     question=question,
+    #     retrieved_sources=sources,
+    #     answer=raw,
+    # )
 
 
 if __name__ == "__main__":
     main()
-    fire.Fire({"index": index, "search": search})
+    fire.Fire(
+        {
+            "index": index,
+            "search": search,
+            "answer": answer,
+        }
+    )

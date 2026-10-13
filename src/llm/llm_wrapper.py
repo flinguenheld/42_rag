@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from typing import Any, ClassVar, TypedDict, cast
+
 import torch
-from typing import ClassVar, TypedDict, cast, Any
 from transformers import (
-    AutoTokenizer,
     AutoModelForCausalLM,
+    AutoTokenizer,
     PreTrainedModel,
 )
 
@@ -89,11 +90,11 @@ class LLMWrapper:
 
         tokens = self._encode_prompt(prompt)
         if tokens and self.tokenizer:
-            generated_tk_ids = self.model.generate(  # type: ignore[operator]
+            generated_tk_ids = self.model.generate(
                 inputs=tokens["input_ids"],
                 attention_mask=tokens["attention_mask"],
                 max_new_tokens=max_new_tokens,
-            )
+            )  # ty: ignore[call-non-callable]
 
             # Get rid of prompt and return the answer
             input_length = tokens["input_ids"].shape[1]
