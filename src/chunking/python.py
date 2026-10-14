@@ -1,46 +1,33 @@
-import re
-
 from chonkie import CodeChunker
 
 from src.models import MinimalSource
 
 
 # ############################################################################
-# Code-aware tokenization for BM25
-def tokenize_python(text: str) -> list[str]:
-    """Split identifiers, numbers and punctuation; lowercase everything.
-
-    Also expands camelCase/PascalCase: "validateUserInput"
-    -> validate, validateuserinput, user, input (lowercased).
-    """
-    token_regex = re.compile(r"[A-Za-z_][A-Za-z0-9_]*|\d+|[^\s\w]")
-    words = token_regex.findall(text)
-    tokens: list[str] = []
-    for w in words:
-        tokens.append(w.lower())
-        tokens.extend(p.lower() for p in re.findall(r"[A-Z][a-z0-9]*", w))
-    return tokens
-
-
-# ############################################################################
 # Chunking: chonkie CodeChunker (tree-sitter AST boundaries)
-def chunk_code(
-    source: str,
-    file_path: str,
-    language: str = "python",
-    chunk_size: int = 2000,
-) -> list[MinimalSource]:
-    """Structure-aware chunking: never splits mid-function/mid-class."""
-    chunker = CodeChunker(
-        language=language,
-        tokenizer="character",  # only used to measure chunk size
-        chunk_size=chunk_size,  # max tokens per chunk
-    )
-    return [
-        MinimalSource(
-            file_path=file_path,
-            first_character_index=c.start_index,
-            last_character_index=c.end_index,
+class ChunkerPython:
+    def __init__(self, chunk_size: int = 2000) -> None:
+        self.chunker = CodeChunker(
+            language="python",
+            tokenizer="character",  # only used to measure chunk size
+            chunk_size=chunk_size,  # max tokens per chunk
         )
-        for c in chunker.chunk(source)
-    ]
+
+    def chunk(self, source: str, file_path: str) -> list[MinimalSource]:
+        """Structure-aware chunking: never splits mid-function/mid-class."""
+
+        # Chunker works with bytes, it allows to convert start/end in char pos
+        source_bytes = source.encode("utf-8")
+
+        return [
+            MinimalSource(
+                file_path=file_path,
+                first_character_index=len(
+                    source_bytes[: c.start_index].decode("utf-8")
+                ),
+                last_character_index=len(
+                    source_bytes[: c.end_index].decode("utf-8")
+                ),
+            )
+            for c in self.chunker.chunk(source)
+        ]

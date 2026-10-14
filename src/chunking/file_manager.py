@@ -3,13 +3,9 @@ from pathlib import Path
 from tqdm import tqdm
 
 import data
-from src.chunking.markdown import chunk_markdown
-from src.chunking.python import chunk_code
+from src.chunking.markdown import ChunkerMarkdown
+from src.chunking.python import ChunkerPython
 from src.models import MinimalSource
-
-# RENAME FILE ##############################################################
-# RENAME FILE ##############################################################
-# RENAME FILE ##############################################################
 
 
 class FileManagerException(Exception):
@@ -17,35 +13,29 @@ class FileManagerException(Exception):
 
 
 class FileManager:
-    FOLDER = "./vllm-0.10.1"
-
-    def __init__(self, max_chunk_size: int):
-        self.max_chunk_size = max_chunk_size
+    def __init__(self, max_chunk_size: int) -> None:
+        self.markdown_ck = ChunkerMarkdown(max_chunk_size)
+        self.python_ck = ChunkerPython(max_chunk_size)
 
     def run(self) -> list[MinimalSource]:
-        """Returns a list of (file_path, chunk)."""
         path = Path(data.FOLDER_RAW)
         if not path.exists():
             raise FileManagerException(
                 f"The folder {data.FOLDER_RAW} does not exist"
             )
 
-        # one dict: extension -> chunking function
-        chunkers = {"*.py": chunk_code, "*.md": chunk_markdown}
-
+        # Manage python & markdown files separately
         records: list[MinimalSource] = []
-        for pattern, chunker in chunkers.items():
+        for pattern in ("*.py", "*.md"):
             files = list(path.rglob(pattern))
             for file in tqdm(files, desc=f"Chunking {pattern}"):
-                records.extend(
-                    chunker(
-                        source=file.read_text(
-                            encoding="utf-8", errors="ignore"
-                        ),
-                        file_path=str(file),
-                        chunk_size=self.max_chunk_size,
-                    )
-                )
+                source = file.read_text(encoding="utf-8", errors="ignore")
+                file_path = str(file)
+
+                if pattern == "*.py":
+                    records.extend(self.python_ck.chunk(source, file_path))
+                else:
+                    records.extend(self.markdown_ck.chunk(source, file_path))
 
         if not records:
             raise FileManagerException("There's no file to chunk")

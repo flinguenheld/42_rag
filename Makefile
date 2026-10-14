@@ -27,14 +27,15 @@ clean:
 
 lint:
 	- uv run flake8 . --extend-exclude \
-			'.venv/,vllm/,$(CACHE_FOLDER)'
+			'.venv/,vllm/,$(CACHE_FOLDER),data/'
 	- uv run mypy . --warn-return-any \
 			--warn-unused-ignores \
 			--ignore-missing-imports \
 			--disallow-untyped-defs \
 			--check-untyped-defs \
 			--exclude 'vllm/' \
-			--exclude $(CACHE_FOLDER)
+			--exclude $(CACHE_FOLDER) \
+			--exclude 'data'
 
 lint-strict:
 	- uv run flake8 . --extend-exclude '.venv,llm_sdk/'

@@ -19,5 +19,3 @@ def build_prompt(
         f"### Sources\n{context}\n\n"
         f"### Question\n{question}"
     )
-
-

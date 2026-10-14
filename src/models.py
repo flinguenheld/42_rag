@@ -10,10 +10,10 @@ class MinimalSource(BaseModel):
     last_character_index: int
 
     def read_text(self) -> str:
-        content = Path(self.file_path).read_text()
-        return content[
-            self.first_character_index : self.last_character_index + 1
-        ]
+        content = Path(self.file_path).read_text(errors="ignore")
+        start = self.first_character_index
+        end = self.last_character_index
+        return content[start:end]
 
 
 class UnansweredQuestion(BaseModel):

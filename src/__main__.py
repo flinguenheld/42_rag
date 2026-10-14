@@ -6,7 +6,7 @@ from src.chunking.file_manager import FileManager
 from src.indexing.indexer import Indexer
 from src.indexing.searcher import Searcher
 from src.llm.llm_wrapper import LLMWrapper
-from src.models import MinimalAnswer, MinimalSource
+from src.models import MinimalSource
 
 
 # ############################################################################
