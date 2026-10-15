@@ -32,7 +32,10 @@ def search(question: str, k: int = 5) -> None:
 
     print("Records:\n")
     for i, record in enumerate(records):
-        print(f"{i + 1} -> file: {record}")
+        print(
+            f"{i + 1} -> file: {record.file_path} \
+[{record.first_character_index}:{record.last_character_index}]"
+        )
 
 
 # ############################################################################
