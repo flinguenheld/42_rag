@@ -20,7 +20,6 @@ class Searcher:
         Get the k first answers for python & markdown.
         """
         k = min(k, len(self.records))
-        return [
-            self.records[idx]
-            for idx, _scores in self.bm25.retrieve([tokenize(question)], k=k)
-        ]
+
+        documents, _scores = self.bm25.retrieve([tokenize(question)], k=k)
+        return [self.records[idx] for idx in documents[0]]

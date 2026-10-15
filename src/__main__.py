@@ -26,15 +26,13 @@ def index(max_chunk_size: int = 2000) -> None:
 
 # ############################################################################
 # ################################################################# SEARCH ###
-def search(question: str, k: int = 5) -> list[MinimalSource]:
+def search(question: str, k: int = 5) -> None:
     searcher = Searcher()
     records = searcher.search(question, k)
 
     print("Records:\n")
     for i, record in enumerate(records):
         print(f"{i + 1} -> file: {record}")
-
-    return records
 
 
 # ############################################################################
