@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, ClassVar, TypedDict, cast
+from typing import ClassVar, cast
 
 import torch
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
+    BatchEncoding,
     PreTrainedModel,
 )
 
@@ -16,16 +17,15 @@ from transformers import (
 class LLMWrapper:
     NAME: ClassVar[str] = "Qwen/Qwen3-0.6B"
 
-    class PromptDict(TypedDict):
-        """Generate returns a dict with these to fields"""
-
-        input_ids: torch.Tensor
-        attention_mask: torch.Tensor
-
     # ########################################################################
     # ############################################################## INIT ####
     def __init__(self) -> None:
-        self.tokenizer = AutoTokenizer.from_pretrained(self.NAME)
+
+        tokenizer = AutoTokenizer.from_pretrained(self.NAME)
+        if tokenizer is None:
+            raise RuntimeError(f"Cannot load the tokenizer of {self.NAME}")
+        self.tokenizer = tokenizer
+
         self.model: PreTrainedModel = cast(
             PreTrainedModel,
             AutoModelForCausalLM.from_pretrained(
@@ -36,37 +36,21 @@ class LLMWrapper:
         )
 
     # ########################################################################
-    # ########################################################### GET IDS ####
-    # TODO: KEEP THAT ? -> BORING BECAUSE IT DOES NOT REALLY RETURN A LIST[INT]
-    def get_ids(self, txt: str) -> list[int] | Any:
-        """Get all ids in txt"""
-        if self.model and self.tokenizer:
-            ids = self.tokenizer(txt).to(self.model.device)
-            return ids["input_ids"]
-        return []
-
-    def get_id(self, txt: str) -> int:
-        """Get the first id of txt"""
-        return self.get_ids(txt)[0]
-
-    # ########################################################################
     # ##################################################### ENCODE PROMPT ####
-    def _encode_prompt(self, prompt: str) -> PromptDict | None | Any:
+    def _encode_prompt(self, prompt: str) -> BatchEncoding:
         """Encode prompt into tokens"""
 
-        if self.model and self.tokenizer:
-            tokens = self.tokenizer.apply_chat_template(
-                [{"role": "user", "content": prompt}],
-                tokenize=False,
-                add_generation_prompt=True,
-                enable_thinking=False,
-            )
+        tokens = self.tokenizer.apply_chat_template(
+            [{"role": "user", "content": prompt}],
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=False,
+        )
 
-            prompt_dict = self.tokenizer([tokens], return_tensors="pt").to(
-                self.model.device
-            )
-            return prompt_dict
-        return None
+        prompt_dict = self.tokenizer([tokens], return_tensors="pt").to(
+            self.model.device
+        )
+        return prompt_dict
 
     # ########################################################################
     # ############################################################### ASK ####
@@ -74,21 +58,23 @@ class LLMWrapper:
         """Generate an answer from the given prompt"""
 
         tokens = self._encode_prompt(prompt)
-        if tokens and self.tokenizer:
-            generated_tk_ids = self.model.generate(
-                inputs=tokens["input_ids"],
-                attention_mask=tokens["attention_mask"],
-                max_new_tokens=max_new_tokens,
-            )  # ty: ignore[call-non-callable]
+        generated_tk_ids = self.model.generate(
+            inputs=tokens["input_ids"],
+            attention_mask=tokens["attention_mask"],
+            max_new_tokens=max_new_tokens,
+            do_sample=False,  # greedy: always the most likely token
+            repetition_penalty=1.1,  # discourage loops
+            temperature=None,  # cancel the sampling values
+            top_p=None,  # from generation_config.json
+            top_k=None,
+        )  # type: ignore[operator] # ty: ignore[call-non-callable]
 
-            # Get rid of prompt and return the answer
-            input_length = tokens["input_ids"].shape[1]
-            answer_ids = generated_tk_ids[0][input_length:]
+        # Get rid of prompt and return the answer
+        input_length = tokens["input_ids"].shape[1]
+        answer_ids = generated_tk_ids[0][input_length:]
 
-            answer = self.tokenizer.decode(
-                answer_ids, skip_special_tokens=True
-            )
-            if isinstance(answer, str):
-                return answer.strip()
+        answer = self.tokenizer.decode(answer_ids, skip_special_tokens=True)
+        if isinstance(answer, str):
+            return answer.strip()
 
         return ""
