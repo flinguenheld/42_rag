@@ -59,7 +59,7 @@ class LLMWrapper:
                 [{"role": "user", "content": prompt}],
                 tokenize=False,
                 add_generation_prompt=True,
-                enable_thinking=True,
+                enable_thinking=False,
             )
 
             prompt_dict = self.tokenizer([tokens], return_tensors="pt").to(
@@ -67,21 +67,6 @@ class LLMWrapper:
             )
             return prompt_dict
         return None
-
-    # ########################################################################
-    # ############################################################ LSTRIP ####
-    def lstrip(self, txt: str) -> str:
-        forbidden = ["<think>", "</think>", "\n", " "]
-
-        again = True
-        while again:
-            again = False
-            for f in forbidden:
-                if txt.startswith(f):
-                    txt = txt.lstrip(f)
-                    again = True
-
-        return txt
 
     # ########################################################################
     # ############################################################### ASK ####
@@ -104,6 +89,6 @@ class LLMWrapper:
                 answer_ids, skip_special_tokens=True
             )
             if isinstance(answer, str):
-                return self.lstrip(answer)
+                return answer.strip()
 
         return ""

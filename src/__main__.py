@@ -1,12 +1,12 @@
 import fire
 
 from data import set_exports
-from src.answering.answering import build_prompt
+from src.answering.answering import answer_question
 from src.chunking.file_manager import FileManager
 from src.indexing.indexer import Indexer
 from src.indexing.searcher import Searcher
 from src.llm.llm_wrapper import LLMWrapper
-from src.models import MinimalSource
+from src.models import UnansweredQuestion
 
 
 # ############################################################################
@@ -40,25 +40,34 @@ def search(question: str, k: int = 5) -> None:
 
 # ############################################################################
 # ################################################################# ANSWER ###
-# def answer(question: str, k: int = 5) -> MinimalAnswer:
 def answer(question: str, k: int = 5) -> None:
-    searcher = Searcher()
-    records = searcher.search(question, k)
+    question = str(question).strip()
 
-    llm = LLMWrapper()
+    if not isinstance(k, int) or k <= 0:
+        print("k has to be an integer of at least 1.")
+    elif not question:
+        print("The question cannot be empty.")
+    else:
+        searcher = Searcher()
+        records = searcher.search(question, k)
 
-    prompt = build_prompt(question, records)
-    raw = llm.ask(prompt, max_new_tokens=2000)
+        llm = LLMWrapper()
+        answered = answer_question(
+            llm, UnansweredQuestion(question=question), sources=records
+        )
 
-    print("test generated:\n")
-    print(raw)
+        print("Question:")
+        print(f"{answered.question} [{answered.question_id}]\n")
 
-    # return MinimalAnswer(
-    #     question_id=...,
-    #     question=question,
-    #     retrieved_sources=sources,
-    #     answer=raw,
-    # )
+        print("Sources:")
+        for i, rec in enumerate(answered.retrieved_sources):
+            print(
+                f"{i + 1} -> file: {rec.file_path} "
+                f"[{rec.first_character_index}:{rec.last_character_index}]"
+            )
+
+        print("\nAnswer:")
+        print(answered.answer)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
-from src.models import MinimalSource
+from src.llm.llm_wrapper import LLMWrapper
+from src.models import MinimalAnswer, MinimalSource, UnansweredQuestion
 
 
 def build_prompt(
@@ -18,4 +19,31 @@ def build_prompt(
         "Cite sources as [Source N]. Be concise.\n\n"
         f"### Sources\n{context}\n\n"
         f"### Question\n{question}"
+    )
+
+
+def answer_question(
+    llm: LLMWrapper,
+    unanswered: UnansweredQuestion,
+    sources: list[MinimalSource],
+    max_new_tokens: int = 512,
+) -> MinimalAnswer:
+    """Generate the answer of one question from its retrieved sources.
+
+    The model only writes the answer text, every other field is known
+    by our code. Without question or sources, the model is not called.
+    """
+    if not unanswered.question.strip():
+        answer = "No question was asked."
+    elif not sources:
+        answer = "No relevant source found to answer this question."
+    else:
+        prompt = build_prompt(unanswered.question, sources)
+        answer = llm.ask(prompt, max_new_tokens=max_new_tokens)
+
+    return MinimalAnswer(
+        question_id=unanswered.question_id,
+        question=unanswered.question,
+        retrieved_sources=sources,
+        answer=answer,
     )
