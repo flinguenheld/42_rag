@@ -53,12 +53,10 @@ class _Helper:
         context = "\n\n".join(context_parts)
 
         return (
-            "You are a documentation assistant for the vLLM codebase.\n"
-            "Answer the question using ONLY the sources below.\n"
-            "If the sources do not contain the answer, say so.\n"
-            "Cite sources as [Source N]. Be concise.\n\n"
-            f"### Sources\n{context}\n\n"
-            f"### Question\n{question}"
+            f"Sources:\n{context}\n\n"
+            f"Question: {question}\n\n"
+            "Answer in a few sentences, using only the sources above. "
+            "If they do not contain the answer, say you do not know."
         )
 
     @staticmethod
