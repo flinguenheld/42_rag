@@ -4,6 +4,7 @@ FOLDER_PROCESSED = "./data/processed/"
 FOLDER_BM25 = "bm25"
 FILE_CHUNKS = "chunks.json"
 FOLDER_RAW = "./data/raw/"
+SOURCE_MAX_TOKENS = 4000
 
 
 def set_exports() -> None:

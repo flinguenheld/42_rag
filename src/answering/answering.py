@@ -1,27 +1,10 @@
+from data import SOURCE_MAX_TOKENS
 from src.llm.llm_wrapper import LLMWrapper
 from src.models import MinimalAnswer, MinimalSource, UnansweredQuestion
 
 
-def build_prompt(
-    question: str,
-    sources: list[MinimalSource],
-) -> str:
-    context_parts: list[str] = []
-    for i, src in enumerate(sources):
-        text = src.read_text().strip()
-        context_parts.append(f"[Source {i + 1}: {src.file_path}]\n{text}")
-    context = "\n\n".join(context_parts) or "No relevant source found."
-
-    return (
-        "You are a documentation assistant for the vLLM codebase.\n"
-        "Answer the question using ONLY the sources below.\n"
-        "If the sources do not contain the answer, say so.\n"
-        "Cite sources as [Source N]. Be concise.\n\n"
-        f"### Sources\n{context}\n\n"
-        f"### Question\n{question}"
-    )
-
-
+# ############################################################################
+# ########################################################### ANSWER QUEST ###
 def answer_question(
     llm: LLMWrapper,
     unanswered: UnansweredQuestion,
@@ -33,17 +16,81 @@ def answer_question(
     The model only writes the answer text, every other field is known
     by our code. Without question or sources, the model is not called.
     """
+
     if not unanswered.question.strip():
         answer = "No question was asked."
-    elif not sources:
-        answer = "No relevant source found to answer this question."
+        checked_sources = []
+
     else:
-        prompt = build_prompt(unanswered.question, sources)
-        answer = llm.ask(prompt, max_new_tokens=max_new_tokens)
+        checked_sources = _Helper.limit_amount_of_sources(llm, sources)
+
+        if not checked_sources:
+            answer = "No relevant source found to answer this question."
+
+        else:
+            prompt = _Helper.build_prompt(unanswered.question, checked_sources)
+            answer = llm.ask(prompt, max_new_tokens=max_new_tokens)
 
     return MinimalAnswer(
         question_id=unanswered.question_id,
         question=unanswered.question,
-        retrieved_sources=sources,
+        retrieved_sources=checked_sources,
         answer=answer,
     )
+
+
+# ############################################################################
+# ################################################################ HELPERS ###
+class _Helper:
+    @staticmethod
+    def build_prompt(
+        question: str,
+        sources: list[MinimalSource],
+    ) -> str:
+        context_parts: list[str] = []
+        for i, source in enumerate(sources):
+            context_parts.append(_Helper.format_source(i + 1, source))
+        context = "\n\n".join(context_parts)
+
+        return (
+            "You are a documentation assistant for the vLLM codebase.\n"
+            "Answer the question using ONLY the sources below.\n"
+            "If the sources do not contain the answer, say so.\n"
+            "Cite sources as [Source N]. Be concise.\n\n"
+            f"### Sources\n{context}\n\n"
+            f"### Question\n{question}"
+        )
+
+    @staticmethod
+    def format_source(index: int, src: MinimalSource) -> str:
+        return f"[Source {index}: {src.file_path}]\n{src.read_text().strip()}"
+
+    @staticmethod
+    def limit_amount_of_sources(
+        llm: LLMWrapper,
+        sources: list[MinimalSource],
+    ) -> list[MinimalSource]:
+        """
+        Loop in the sources and accumulate them one by one as long as the limit
+        of tokens has not been reached.
+        Avoid them after the limit.
+        """
+
+        token_left = SOURCE_MAX_TOKENS
+        source_kept = []
+
+        for i, source in enumerate(sources):
+            token_requiered = llm.count_tokens(
+                _Helper.format_source(i + 1, source)
+            )
+
+            if token_left - token_requiered >= 0:
+                token_left -= token_requiered
+                source_kept.append(source)
+            else:
+                print(
+                    f"Only take the first {len(source_kept)} on {len(sources)}"
+                )
+                break
+
+        return source_kept

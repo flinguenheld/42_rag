@@ -78,3 +78,9 @@ class LLMWrapper:
             return answer.strip()
 
         return ""
+
+    # ########################################################################
+    # ###################################################### COUNT TOKENS ####
+    def count_tokens(self, text: str) -> int:
+        """Count the tokens of a text, as seen by this model"""
+        return len(self.tokenizer(text)["input_ids"])

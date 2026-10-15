@@ -12,7 +12,7 @@ from src.models import MinimalSource, UnansweredQuestion
 # ################################################################## INDEX ###
 def index(max_chunk_size: int = 2000) -> None:
 
-    if Helpers.is_chunk_size_valid(max_chunk_size):
+    if _Helper.is_chunk_size_valid(max_chunk_size):
         records = FileManager(max_chunk_size).run()
         indexer = Indexer(records)
         indexer.save()
@@ -23,12 +23,12 @@ def index(max_chunk_size: int = 2000) -> None:
 def search(question: str, k: int = 5) -> None:
 
     question = str(question).strip()
-    if Helpers.is_question_valid(question, k):
+    if _Helper.is_question_valid(question, k):
         searcher = Searcher()
         records = searcher.search(question, k)
 
         print("Records:\n")
-        Helpers.print_records(records)
+        _Helper.print_records(records)
 
 
 # ############################################################################
@@ -36,20 +36,20 @@ def search(question: str, k: int = 5) -> None:
 def answer(question: str, k: int = 5) -> None:
 
     question = str(question).strip()
-    if Helpers.is_question_valid(question, k):
+    if _Helper.is_question_valid(question, k):
         searcher = Searcher()
         records = searcher.search(question, k)
 
-        llm = LLMWrapper()
-        answered = answer_question(
-            llm, UnansweredQuestion(question=question), sources=records
-        )
+        unanswered = UnansweredQuestion(question=question)
 
         print("Question:")
-        print(f"{answered.question} [{answered.question_id}]\n")
+        print(f"{unanswered.question} [{unanswered.question_id}]\n")
+
+        llm = LLMWrapper()
+        answered = answer_question(llm, unanswered, sources=records)
 
         print("Sources:")
-        Helpers.print_records(answered.retrieved_sources)
+        _Helper.print_records(answered.retrieved_sources)
 
         print("\nAnswer:")
         print(answered.answer)
@@ -57,7 +57,7 @@ def answer(question: str, k: int = 5) -> None:
 
 # ############################################################################
 # ################################################################ HELPERS ###
-class Helpers:
+class _Helper:
     @staticmethod
     def is_chunk_size_valid(max_chunk_size: Any) -> bool:
 
