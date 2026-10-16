@@ -4,8 +4,9 @@ from typing import Any
 from pydantic import BaseModel, ValidationError
 from tqdm import tqdm
 
+from data import FOLDER_PROCESSED
 from src.answering.answering import answer_question
-from src.chunking.file_manager import FileManager
+from src.chunking.file_manager import FileManager, FileManagerException
 from src.indexing.indexer import Indexer
 from src.indexing.searcher import Searcher
 from src.llm.llm_wrapper import LLMWrapper
@@ -26,32 +27,47 @@ class CommandError(Exception):
 # ################################################################## INDEX ###
 def index(max_chunk_size: int = 2000) -> None:
 
-    if _Helper.is_chunk_size_valid(max_chunk_size):
+    try:
+        _Helper.check_chunk_size(max_chunk_size)
         records = FileManager(max_chunk_size).run()
-        indexer = Indexer(records)
-        indexer.save()
+        Indexer(records).save()
+        print(f"Ingestion complete! Indices saved under {FOLDER_PROCESSED}")
+
+    except FileManagerException as error:
+        print(error)
+    except OSError:
+        print(f"The index cannot be written in '{FOLDER_PROCESSED}'.")
+    except CommandError as error:
+        print(error)
 
 
 # ############################################################################
 # ################################################################# SEARCH ###
 def search(question: str, k: int = 5) -> None:
 
-    question = str(question).strip()
-    if _Helper.is_question_valid(question, k):
-        searcher = Searcher()
+    try:
+        question = str(question).strip()
+        _Helper.check_question(question)
+        _Helper.check_k(k)
+        searcher = _Helper.load_searcher()
         records = searcher.search(question, k)
 
         print("Records:\n")
         _Helper.print_records(records)
+
+    except CommandError as error:
+        print(error)
 
 
 # ############################################################################
 # ################################################################# ANSWER ###
 def answer(question: str, k: int = 5) -> None:
 
-    question = str(question).strip()
-    if _Helper.is_question_valid(question, k):
-        searcher = Searcher()
+    try:
+        question = str(question).strip()
+        _Helper.check_question(question)
+        _Helper.check_k(k)
+        searcher = _Helper.load_searcher()
         records = searcher.search(question, k)
 
         unanswered = UnansweredQuestion(question=question)
@@ -67,6 +83,9 @@ def answer(question: str, k: int = 5) -> None:
 
         print("\nAnswer:")
         print(answered.answer)
+
+    except CommandError as error:
+        print(error)
 
 
 # ############################################################################
@@ -163,37 +182,28 @@ class _Helper:
             raise CommandError(f"The file '{path}' cannot be written.")
 
     @staticmethod
-    def is_chunk_size_valid(max_chunk_size: Any) -> bool:
+    def check_chunk_size(max_chunk_size: Any) -> None:
 
         if not isinstance(max_chunk_size, int):
-            print("max_chunk_size has to be an integer.")
-            return False
+            raise CommandError("max_chunk_size has to be an integer.")
 
         if max_chunk_size <= 1:
-            print("max_chunk_size cannot be lower than 2.")
-            return False
+            raise CommandError("max_chunk_size cannot be lower than 2.")
 
         if max_chunk_size > 2000:
-            print("max_chunk_size cannot be higher than 2000.")
-            return False
-
-        return True
+            raise CommandError("max_chunk_size cannot be higher than 2000.")
 
     @staticmethod
-    def is_question_valid(question: str, k: int) -> bool:
-
-        if not isinstance(k, int) or k <= 0:
-            print("k has to be an integer of at least 1.")
-            return False
+    def check_question(question: str) -> None:
 
         if not question:
-            print("The question cannot be empty.")
-            return False
-
-        return True
+            raise CommandError("The question cannot be empty.")
 
     @staticmethod
     def print_records(records: list[MinimalSource]) -> None:
+
+        if not records:
+            print("No relevant source found.")
 
         for i, rec in enumerate(records):
             print(
