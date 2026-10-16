@@ -12,11 +12,13 @@ RAG against the machine. Will you answer my questions?
 This project uses [UV](https://docs.astral.sh/uv/) for automatic virtual environment management.  
 Once installed, you can use it with the Makefile with these commands:
 
-On the 42's computers, uncomment the following lines to put the cache in the *goinfre* folder:
+On the 42's computers, the session space is limited: first put the virtual
+environment, the uv cache and the Hugging Face models in the *goinfre* folder.
+The script has to be **sourced** (not executed), in every new terminal:
 
 ```Bash
-UV_CACHE_DIR = "~/goinfre/.cache_rag"
-export UV_CACHE_DIR
+source export_to_goinfre.sh      # bash / zsh
+source export_to_goinfre.fish    # fish
 ```
 
 ```Bash
