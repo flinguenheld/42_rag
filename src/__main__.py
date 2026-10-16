@@ -1,7 +1,14 @@
 import fire
 
 from data import set_exports
-from src.commands import answer, answer_dataset, index, search, search_dataset
+from src.commands import (
+    answer,
+    answer_dataset,
+    evaluate,
+    index,
+    search,
+    search_dataset,
+)
 
 
 # ############################################################################
@@ -20,5 +27,6 @@ if __name__ == "__main__":
             "answer": answer,
             "search_dataset": search_dataset,
             "answer_dataset": answer_dataset,
+            "evaluate": evaluate,
         }
     )

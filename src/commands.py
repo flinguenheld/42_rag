@@ -8,6 +8,7 @@ from tqdm import tqdm
 from data import FOLDER_PROCESSED
 from src.answering.answering import answer_question
 from src.chunking.file_manager import FileManager, FileManagerException
+from src.evaluation.recall import answered_questions, recall_at_k
 from src.indexing.indexer import Indexer
 from src.indexing.searcher import Searcher
 from src.llm.llm_wrapper import LLMWrapper
@@ -184,6 +185,39 @@ def answer_dataset(
 
         _Helper.save_json(results_and_answers, path_save)
         print(f"Questions with sources and answer saved in '{path_save}'.")
+
+    except CommandError as error:
+        print(error)
+
+
+# ############################################################################
+# ############################################################### EVALUATE ###
+def evaluate(student_search_results_path: str, dataset_path: str) -> None:
+    """
+    Compare our search results with the reference sources of a dataset.
+    Print the recall@k, for our own testing (the official one is computed
+    by the moulinette).
+    """
+
+    try:
+        results = _Helper.load_json(
+            Path(student_search_results_path), StudentSearchResults
+        )
+        dataset = _Helper.load_json(Path(dataset_path), RagDataset)
+
+        questions = answered_questions(dataset)
+        if not questions:
+            raise CommandError("The dataset has no question with sources.")
+
+        result_ids = {result.question_id for result in results.search_results}
+        if not any(q.question_id in result_ids for q in questions):
+            raise CommandError(
+                "No question in common: are both files from the same dataset?"
+            )
+
+        print(f"Questions evaluated: {len(questions)}")
+        for k, recall in recall_at_k(results, questions).items():
+            print(f"Recall@{k}: {recall:.3f} ({recall:.1%})")
 
     except CommandError as error:
         print(error)
