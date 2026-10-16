@@ -47,9 +47,9 @@ class LLMWrapper:
             enable_thinking=False,
         )
 
-        prompt_dict = self.tokenizer([tokens], return_tensors="pt").to(
-            self.model.device
-        )
+        prompt_dict: BatchEncoding = self.tokenizer(
+            [tokens], return_tensors="pt"
+        ).to(self.model.device)
         return prompt_dict
 
     # ########################################################################

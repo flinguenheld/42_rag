@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +16,7 @@ from src.models import (
     MinimalSource,
     RagDataset,
     StudentSearchResults,
+    StudentSearchResultsAndAnswer,
     UnansweredQuestion,
 )
 
@@ -129,6 +131,59 @@ def search_dataset(dataset_path: str, save_directory: str, k: int = 5) -> None:
         path_save = Path(save_directory) / path_dataset.name
         _Helper.save_json(results, path_save)
         print(f"Questions with their sources saved in '{path_save}'.")
+
+    except CommandError as error:
+        print(error)
+
+
+# ############################################################################
+# ######################################################### ANSWER DATASET ###
+def answer_dataset(
+    student_search_results_path: str,
+    save_directory: str,
+) -> None:
+
+    def prepare_save_path(file_name: str) -> Path:
+        """Create the save folder before the slow LLM loop, fail fast."""
+
+        folder = Path(save_directory)
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            raise CommandError(f"The folder '{folder}' cannot be created.")
+
+        if not os.access(folder, os.W_OK):
+            raise CommandError(f"The folder '{folder}' is not writable.")
+
+        return folder / file_name
+
+    # #######################################
+    # #######################################
+    path_results = Path(student_search_results_path)
+    try:
+        results = _Helper.load_json(path_results, StudentSearchResults)
+        path_save = prepare_save_path(path_results.name)
+
+        answers = []
+        llm = LLMWrapper()
+        for res in tqdm(results.search_results):
+            answers.append(
+                answer_question(
+                    llm,
+                    unanswered=UnansweredQuestion(
+                        question_id=res.question_id,
+                        question=res.question,
+                    ),
+                    sources=res.retrieved_sources,
+                )
+            )
+        results_and_answers = StudentSearchResultsAndAnswer(
+            search_results=answers,
+            k=results.k,
+        )
+
+        _Helper.save_json(results_and_answers, path_save)
+        print(f"Questions with sources and answer saved in '{path_save}'.")
 
     except CommandError as error:
         print(error)

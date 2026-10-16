@@ -1,3 +1,8 @@
+import os
+from pathlib import Path
+
+from tqdm import tqdm
+
 from data import SOURCE_MAX_TOKENS
 from src.llm.llm_wrapper import LLMWrapper
 from src.models import MinimalAnswer, MinimalSource, UnansweredQuestion
@@ -22,7 +27,10 @@ def answer_question(
         checked_sources = []
 
     else:
-        checked_sources = _Helper.limit_amount_of_sources(llm, sources)
+        readable_sources = _Helper.keep_readable_sources(sources)
+        checked_sources = _Helper.limit_amount_of_sources(
+            llm, readable_sources
+        )
 
         if not checked_sources:
             answer = "No relevant source found to answer this question."
@@ -42,6 +50,25 @@ def answer_question(
 # ############################################################################
 # ################################################################ HELPERS ###
 class _Helper:
+    @staticmethod
+    def keep_readable_sources(
+        sources: list[MinimalSource],
+    ) -> list[MinimalSource]:
+        """
+        Skip the sources whose file is missing or cannot be read,
+        so the answer is built from the remaining ones.
+        """
+
+        readable = []
+        for source in sources:
+            path = Path(source.file_path)
+            if path.is_file() and os.access(path, os.R_OK):
+                readable.append(source)
+            else:
+                tqdm.write(f"Source skipped, cannot read '{path}'")
+
+        return readable
+
     @staticmethod
     def build_prompt(
         question: str,
@@ -86,7 +113,7 @@ class _Helper:
                 token_left -= token_requiered
                 source_kept.append(source)
             else:
-                print(
+                tqdm.write(
                     f"Only take the first {len(source_kept)} on {len(sources)}"
                 )
                 break
