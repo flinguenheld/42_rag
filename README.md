@@ -55,30 +55,37 @@ uv run python -m src answer_dataset \
 ## System architecture
 
 ```mermaid
-flowchart LR
-    subgraph Indexing ["index"]
-        RAW[data/raw/<br>.py .md .txt] --> FM[FileManager]
-        FM -->|.py| PY[ChunkerPython<br>CodeChunker]
-        FM -->|.md .txt| MD[ChunkerMarkdown<br>RecursiveChunker]
-        PY --> IDX[Indexer<br>tokenize + BM25]
+flowchart TD
+    subgraph Indexing ["1. index"]
+        direction LR
+        RAW["data/raw/<br>.py .md .txt"] --> FM["FileManager"]
+        FM -->|".py"| PY["ChunkerPython<br>CodeChunker"]
+        FM -->|".md .txt"| MD["ChunkerMarkdown<br>RecursiveChunker"]
+        PY --> IDX["Indexer<br>tokenize + BM25"]
         MD --> IDX
-        IDX --> PROC[(data/processed/<br>bm25/ + chunks.json)]
+        IDX --> PROC[("data/processed/<br>bm25/ + chunks.json")]
     end
 
-    subgraph Retrieval ["search / search_dataset"]
-        Q[Question] --> S[Searcher<br>top-k, score > 0]
-        PROC --> S
-        S --> SR[StudentSearchResults<br>JSON]
+    subgraph Retrieval ["2. search / search_dataset"]
+        direction LR
+        Q["Question"] --> S["Searcher<br>top-k, score > 0"]
+        S --> SR["StudentSearchResults<br>JSON"]
     end
 
-    subgraph Generation ["answer / answer_dataset"]
-        SR --> B[Token budget<br>SOURCE_MAX_TOKENS]
-        B --> P[Prompt<br>sources + question]
-        P --> LLM[Qwen3-0.6B]
-        LLM --> SA[StudentSearchResultsAndAnswer<br>JSON]
+    subgraph Generation ["3. answer / answer_dataset"]
+        direction LR
+        B["Token budget<br>SOURCE_MAX_TOKENS"] --> P["Prompt<br>sources + question"]
+        P --> LLM["Qwen3-0.6B"]
+        LLM --> SA["StudentSearchResultsAndAnswer<br>JSON"]
     end
 
-    SR --> EV[evaluate<br>recall@k]
+    subgraph Evaluation ["evaluate"]
+        EV["recall@k vs<br>AnsweredQuestions"]
+    end
+
+    Indexing -->|"BM25 index"| Retrieval
+    Retrieval -->|"top-k sources"| Generation
+    Retrieval -->|"search results"| Evaluation
 ```
 
 - **`src/chunking/`**: reads `data/raw/` and splits each file into chunks
