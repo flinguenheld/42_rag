@@ -26,7 +26,7 @@ class FileManager:
 
         # Manage python & markdown files separately
         records: list[MinimalSource] = []
-        for pattern in ("*.py", "*.md"):
+        for pattern in ("*.py", "*.md", "*.txt"):
             files = list(path.rglob(pattern))
             for file in tqdm(files, desc=f"Chunking {pattern}"):
                 source = file.read_text(encoding="utf-8", errors="ignore")
