@@ -30,7 +30,12 @@ class LLMWrapper:
             PreTrainedModel,
             AutoModelForCausalLM.from_pretrained(
                 self.NAME,
-                dtype=torch.bfloat16,
+                # bfloat16 is fast on GPU, but emulated (slow) on most CPUs
+                dtype=(
+                    torch.bfloat16
+                    if torch.cuda.is_available()
+                    else torch.float32
+                ),
                 device_map="auto",
             ),
         )

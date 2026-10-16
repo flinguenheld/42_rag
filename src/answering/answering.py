@@ -14,7 +14,7 @@ def answer_question(
     llm: LLMWrapper,
     unanswered: UnansweredQuestion,
     sources: list[MinimalSource],
-    max_new_tokens: int = 512,
+    max_new_tokens: int = 256,
 ) -> MinimalAnswer:
     """Generate the answer of one question from its retrieved sources.
 
