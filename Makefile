@@ -16,7 +16,7 @@ helix:
 	uv run hx .
 
 debug:
-	uv run python -m src
+	uv run python -m pdb -m src
 
 clean:
 	find . -name __pycache__ -not -path './data/*' -prune -exec rm -rf {} +

@@ -168,6 +168,27 @@ Speed (AMD Ryzen 7 7735HS, no GPU, `exam_retrieval.sh`): indexing 15 s,
 - **Robustness**: missing source files are skipped, the save folder is
   checked before the slow LLM loop, and inputs are validated with pydantic.
 
+## Challenges faced
+
+- **Byte offsets vs character offsets**: `CodeChunker` returns byte positions,
+  so any non-ASCII character (accents, emojis in comments) shifted the ranges.
+  The byte offsets are now converted to character offsets before saving.
+- **Docs recall below 80 %**: some answers lived in `CMakeLists.txt` and
+  `requirements/*.txt`, which were not indexed, and large Markdown chunks mixed
+  several sections. Indexing `*.txt` and capping Markdown chunks at 1500
+  characters brought docs recall@5 from 78 % to 83 % (see the table above).
+- **Slow answers on CPU**: `bfloat16` is emulated without hardware support;
+  switching to `float32` on CPU made generation ~3x faster.
+- **A small model distracted by noise**: with all 10 sources, Qwen3-0.6B often
+  answered from an irrelevant one. The source token budget keeps the best
+  ranked sources only.
+- **Limited disk space on the 42 computers**: the venv, the uv cache and the
+  model weights do not fit in the session, hence the `export_to_goinfre`
+  scripts.
+- **Never crash on bad input**: every expected error raises a `CommandError`
+  caught by the command, so empty queries, `k=0`, missing or malformed files
+  only print a message.
+
 ## Resources
 
 - [vLLM documentation](https://docs.vllm.ai/en/latest/)
@@ -178,4 +199,9 @@ Speed (AMD Ryzen 7 7735HS, no GPU, `exam_retrieval.sh`): indexing 15 s,
 
 ### AI usage
 
-Claude (Claude Code) was used as a reviewer and pair programmer:
+Claude (Claude Code) was used as a reviewer and tutor:
+
+- **Code review**: reviewing the code for bugs, unhandled errors and
+  flake8 / mypy issues.
+- **Concepts**: explaining RAG, BM25 vs TF-IDF and chunking, and how to use
+  the Transformers, Chonkie and bm25s APIs.
