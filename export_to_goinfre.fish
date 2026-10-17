@@ -7,3 +7,4 @@ set -gx HF_HUB_CACHE "$cache_folder/hugging_face"
 set -gx HF_HOME "$cache_folder/hugging_face"
 set -gx UV_CACHE_DIR "$cache_folder/uv"
 set -gx UV_LINK_MODE copy
+set -gx TREE_SITTER_LANGUAGE_PACK_CACHE_DIR "$cache_folder/tree_sitter"
